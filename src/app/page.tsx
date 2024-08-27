@@ -1,5 +1,5 @@
+"use client";
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
   ChevronRight,
@@ -86,28 +86,15 @@ const initialData: Item[] = [
 ];
 
 export default function Component() {
-  const [currentFolder, setCurrentFolder] = useState<string[]>([]);
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const getCurrentItems = () => {
-    let current = initialData;
-    for (const folderId of currentFolder) {
-      const folder = current.find((item) => item.id === folderId);
-      if (folder && folder.items) {
-        current = folder.items;
-      } else {
-        break;
-      }
-    }
-    return current;
-  };
-
-  const navigateToFolder = (folderId: string) => {
-    setCurrentFolder((prev) => [...prev, folderId]);
-  };
-
-  const navigateUp = () => {
-    setCurrentFolder((prev) => prev.slice(0, -1));
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders((prev) =>
+      prev.includes(folderId)
+        ? prev.filter((id) => id !== folderId)
+        : [...prev, folderId]
+    );
   };
 
   const renderIcon = (type: Item["type"]) => {
@@ -121,51 +108,59 @@ export default function Component() {
     }
   };
 
-  const renderListItem = (item: Item) => {
+  const renderListItem = (item: Item, depth: number = 0) => {
     const isFolder = item.type === "Folder";
+    const isExpanded = expandedFolders.includes(item.id);
 
     return (
-      <motion.div
-        key={item.id}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-5 items-center border-b border-gray-700 py-2 cursor-pointer hover:bg-gray-900"
-        onClick={() => (isFolder ? navigateToFolder(item.id) : null)}
-      >
-        <div className="col-span-2 flex items-center">
-          {renderIcon(item.type)}
-          <span className="ml-2 truncate">{item.name}</span>
+      <React.Fragment key={item.id}>
+        <div
+          className={`grid grid-cols-1 md:grid-cols-5 items-center border-b border-gray-700 py-2 cursor-pointer hover:bg-gray-900`}
+          onClick={() => isFolder && toggleFolder(item.id)}
+          style={{ paddingLeft: `${depth * 20}px` }}
+        >
+          <div className="col-span-2 flex items-center">
+            {isFolder &&
+              (isExpanded ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              ))}
+            {renderIcon(item.type)}
+            <span className="ml-2 truncate">{item.name}</span>
+          </div>
+          <div className="hidden md:block">
+            <span className="bg-gray-800 text-xs px-2 py-1 rounded">
+              {item.date}
+            </span>
+          </div>
+          <div className="hidden md:block">
+            <span className="bg-gray-800 text-xs px-2 py-1 rounded">
+              {item.size}
+            </span>
+          </div>
+          <div className="hidden md:flex items-center justify-between">
+            <span className="bg-gray-800 text-xs px-2 py-1 rounded">
+              {item.type}
+            </span>
+            {!isFolder && (
+              <button
+                className="bg-white text-black text-xs px-2 py-1 rounded flex items-center hover:bg-yellow-300 transition-colors"
+                aria-label={`Download ${item.name}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download size={12} className="mr-1" />
+                Download
+              </button>
+            )}
+          </div>
         </div>
-        <div className="hidden md:block">
-          <span className="bg-gray-800 text-xs px-2 py-1 rounded">
-            {item.date}
-          </span>
-        </div>
-        <div className="hidden md:block">
-          <span className="bg-gray-800 text-xs px-2 py-1 rounded">
-            {item.size}
-          </span>
-        </div>
-        <div className="hidden md:flex items-center justify-between">
-          <span className="bg-gray-800 text-xs px-2 py-1 rounded">
-            {item.type}
-          </span>
-          {!isFolder && (
-            <motion.button
-              className="bg-white text-black text-xs px-2 py-1 rounded flex items-center hover:bg-yellow-300 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              aria-label={`Download ${item.name}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Download size={12} className="mr-1" />
-              Download
-            </motion.button>
-          )}
-        </div>
-      </motion.div>
+        {isExpanded && item.items && (
+          <div>
+            {item.items.map((subItem) => renderListItem(subItem, depth + 1))}
+          </div>
+        )}
+      </React.Fragment>
     );
   };
 
@@ -173,48 +168,31 @@ export default function Component() {
     const isFolder = item.type === "Folder";
 
     return (
-      <motion.div
+      <div
         key={item.id}
-        className="bg-gray-900 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer"
-        whileHover={{ scale: 1.05 }}
-        transition={{ duration: 0.2 }}
-        onClick={() => (isFolder ? navigateToFolder(item.id) : null)}
+        className="bg-gray-900 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-800"
+        onClick={() => isFolder && toggleFolder(item.id)}
       >
         {renderIcon(item.type)}
         <span className="mt-2 truncate w-full">{item.name}</span>
         <span className="text-xs text-gray-400 mt-1">{item.size}</span>
         {!isFolder && (
-          <motion.button
+          <button
             className="bg-white text-black text-xs px-2 py-1 rounded flex items-center mt-2 hover:bg-yellow-300 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             aria-label={`Download ${item.name}`}
             onClick={(e) => e.stopPropagation()}
           >
             <Download size={12} className="mr-1" />
             Download
-          </motion.button>
+          </button>
         )}
-      </motion.div>
+      </div>
     );
   };
 
   const renderContent = () => {
-    const currentItems = getCurrentItems();
-
     return (
       <div>
-        {currentFolder.length > 0 && (
-          <motion.button
-            className="mb-4 bg-gray-800 text-white px-3 py-1 rounded flex items-center"
-            onClick={navigateUp}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <ChevronLeft size={16} className="mr-1" />
-            Back
-          </motion.button>
-        )}
         {viewMode === "list" ? (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-5 text-xs border-b border-gray-800 py-2 md:grid">
@@ -223,15 +201,11 @@ export default function Component() {
               <div>Size</div>
               <div>Type</div>
             </div>
-            <AnimatePresence>
-              {currentItems.map((item) => renderListItem(item))}
-            </AnimatePresence>
+            {initialData.map((item) => renderListItem(item))}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <AnimatePresence>
-              {currentItems.map((item) => renderGridItem(item))}
-            </AnimatePresence>
+            {initialData.map((item) => renderGridItem(item))}
           </div>
         )}
       </div>
@@ -239,29 +213,7 @@ export default function Component() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-['Superstudio',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation_Mono','Courier_New',monospace] text-sm uppercase">
-      <style jsx global>{`
-        @font-face {
-          font-family: "Superstudio";
-          src: url("/fonts/SuperstudioLLWeb-Regular.woff2") format("woff2");
-          font-weight: normal;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: "Superstudio";
-          src: url("/fonts/SuperstudioLLWeb-Bold.woff2") format("woff2");
-          font-weight: bold;
-          font-style: normal;
-          font-display: swap;
-        }
-        body {
-          letter-spacing: -0.02em;
-          text-transform: uppercase;
-          font-size: clamp(14px, 3px + 1.3vw, 20px);
-          line-height: 1.2;
-        }
-      `}</style>
+    <div className="min-h-screen bg-black text-white font-mono text-sm uppercase">
       <header className="fixed top-0 left-0 right-0 bg-black z-10 border-b border-gray-800">
         <div className="container mx-auto py-4 px-4">
           <a
@@ -280,32 +232,28 @@ export default function Component() {
       </main>
 
       <div className="fixed bottom-4 right-4 flex space-x-2">
-        <motion.button
+        <button
           className={`p-2 rounded-full transition-colors ${
             viewMode === "list"
               ? "bg-white text-black"
               : "bg-gray-800 text-white"
           }`}
           onClick={() => setViewMode("list")}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
           aria-label="List view"
         >
           <List size={20} />
-        </motion.button>
-        <motion.button
+        </button>
+        <button
           className={`p-2 rounded-full transition-colors ${
             viewMode === "grid"
               ? "bg-white text-black"
               : "bg-gray-800 text-white"
           }`}
           onClick={() => setViewMode("grid")}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
           aria-label="Grid view"
         >
           <Grid size={20} />
-        </motion.button>
+        </button>
       </div>
     </div>
   );
