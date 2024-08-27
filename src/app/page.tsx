@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
   ChevronRight,
@@ -506,23 +507,37 @@ export default function Component() {
     const isExpanded = expandedFolders.includes(item.id);
 
     return (
-      <React.Fragment key={item.id}>
-        <div
-          className={`grid grid-cols-1 md:grid-cols-5 items-center border-b border-gray-700 py-2 cursor-pointer hover:bg-gray-900`}
+      <motion.div
+        key={item.id}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <motion.div
+          className={`grid grid-cols-1 md:grid-cols-5 items-center border-b border-gray-700 py-2 cursor-pointer`}
           onClick={() =>
             isFolder ? toggleFolder(item.id) : togglePlay(item.id)
           }
+          whileHover={{
+            backgroundColor: isFolder
+              ? "transparent"
+              : "rgba(255, 255, 255, 0.05)",
+          }}
         >
           <div
             className="col-span-2 flex items-center"
             style={{ paddingLeft: `${depth * 20}px` }}
           >
-            {isFolder &&
-              (isExpanded ? (
-                <ChevronDown size={16} />
-              ) : (
+            {isFolder && (
+              <motion.div
+                initial={false}
+                animate={{ rotate: isExpanded ? 90 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
                 <ChevronRight size={16} />
-              ))}
+              </motion.div>
+            )}
             {renderIcon(item.type)}
             <span className="ml-2 truncate">{item.name}</span>
           </div>
@@ -541,8 +556,10 @@ export default function Component() {
               {item.type}
             </span>
             {!isFolder && (
-              <button
+              <motion.button
                 className="bg-white text-black text-xs px-2 py-1 rounded flex items-center hover:bg-yellow-300 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 aria-label={
                   isPlaying === item.id
                     ? `Pause ${item.name}`
@@ -558,16 +575,23 @@ export default function Component() {
                 ) : (
                   <Play size={12} />
                 )}
-              </button>
+              </motion.button>
             )}
           </div>
-        </div>
-        {isExpanded && item.items && (
-          <div>
-            {item.items.map((subItem) => renderListItem(subItem, depth + 1))}
-          </div>
-        )}
-      </React.Fragment>
+        </motion.div>
+        <AnimatePresence>
+          {isExpanded && item.items && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {item.items.map((subItem) => renderListItem(subItem, depth + 1))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
   };
 
@@ -575,9 +599,11 @@ export default function Component() {
     const isFolder = item.type === "Album" || item.type === "EP";
 
     return (
-      <div
+      <motion.div
         key={item.id}
-        className="bg-gray-900 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-800"
+        className="bg-gray-900 p-4 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() =>
           isFolder ? navigateToFolder(item.id) : togglePlay(item.id)
         }
@@ -586,8 +612,10 @@ export default function Component() {
         <span className="mt-2 truncate w-full">{item.name}</span>
         <span className="text-xs text-gray-400 mt-1">{item.date}</span>
         {!isFolder && (
-          <button
+          <motion.button
             className="bg-white text-black text-xs px-2 py-1 rounded flex items-center mt-2 hover:bg-yellow-300 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             aria-label={
               isPlaying === item.id ? `Pause ${item.name}` : `Play ${item.name}`
             }
@@ -597,9 +625,9 @@ export default function Component() {
             }}
           >
             {isPlaying === item.id ? <Pause size={12} /> : <Play size={12} />}
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
     );
   };
 
@@ -607,15 +635,22 @@ export default function Component() {
     const currentItems = getCurrentItems();
 
     return (
-      <div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         {currentPath.length > 0 && (
-          <button
+          <motion.button
             className="mb-4 bg-gray-800 text-white px-3 py-1 rounded flex items-center hover:bg-gray-700"
             onClick={navigateUp}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ChevronLeft size={16} className="mr-1" />
             Back
-          </button>
+          </motion.button>
         )}
         {viewMode === "list" ? (
           <div>
@@ -625,14 +660,22 @@ export default function Component() {
               <div>Duration</div>
               <div>Type</div>
             </div>
-            {currentItems.map((item) => renderListItem(item))}
+            <AnimatePresence>
+              {currentItems.map((item) => renderListItem(item))}
+            </AnimatePresence>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <motion.div
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             {currentItems.map((item) => renderGridItem(item))}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
     );
   };
 
@@ -649,28 +692,32 @@ export default function Component() {
       </main>
 
       <div className="fixed bottom-4 right-4 flex space-x-2">
-        <button
+        <motion.button
           className={`p-2 rounded-full transition-colors ${
             viewMode === "list"
               ? "bg-white text-black"
               : "bg-gray-800 text-white"
           }`}
           onClick={() => setViewMode("list")}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           aria-label="List view"
         >
           <List size={20} />
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           className={`p-2 rounded-full transition-colors ${
             viewMode === "grid"
               ? "bg-white text-black"
               : "bg-gray-800 text-white"
           }`}
           onClick={() => setViewMode("grid")}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           aria-label="Grid view"
         >
           <Grid size={20} />
-        </button>
+        </motion.button>
       </div>
     </div>
   );
